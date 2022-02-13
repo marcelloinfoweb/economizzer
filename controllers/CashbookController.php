@@ -21,7 +21,7 @@ class CashbookController extends BaseController
         return [
             'access' => [
                 'class' => AccessControl::classname(),
-                'only'  => ['index','create','update','delete','view','target','accomplishment','overview','performance'],
+                'only' => ['index', 'create', 'update', 'delete', 'view', 'target', 'accomplishment', 'overview', 'performance'],
                 'rules' => [
                     [
                         'allow' => true,
@@ -37,6 +37,7 @@ class CashbookController extends BaseController
             ],
         ];
     }
+
     public function actionIndex()
     {
         $searchModel = new CashbookSearch();
@@ -49,31 +50,33 @@ class CashbookController extends BaseController
             'dataProvider' => $dataProvider,
         ]);
     }
+
     public function actionView($id)
     {
         return $this->render('view', [
             'model' => $this->findModel($id),
         ]);
     }
+
     public function actionCreate()
     {
         $model = new Cashbook;
-        $model->inc_datetime = date("Y-m-d H:i:s"); 
+        $model->inc_datetime = date("Y-m-d H:i:s");
         $model->user_id = Yii::$app->user->identity->id;
         $model->date = date("Y-m-d");
- 
+
         if ($model->load(Yii::$app->request->post())) {
             // process uploaded image file instance
             $file = $model->uploadImage();
- 
+
             if ($model->save()) {
                 // upload only if valid uploaded file instance found
                 if ($file !== false) {
                     // Create the ID folder 
                     $idfolder = Yii::$app->user->identity->id;
                     //$idfolder = str_pad($idfolder, 6, "0", STR_PAD_LEFT); // add 0000+ID
-                    if(!is_dir(Yii::$app->params['uploadUrl'] . $idfolder)){
-                    mkdir(Yii::$app->params['uploadUrl'] . $idfolder, 0777, true);
+                    if (!is_dir(Yii::$app->params['uploadUrl'] . $idfolder)) {
+                        mkdir(Yii::$app->params['uploadUrl'] . $idfolder, 0777, true);
                     }
                     $path = $model->getImageFile();
                     $file->saveAs($path);
@@ -88,27 +91,32 @@ class CashbookController extends BaseController
             'model' => $model,
         ]);
     }
+
+    /**
+     * @throws ErrorException
+     * @throws NotFoundHttpException
+     */
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
-        if ($model->user_id != Yii::$app->user->id){
+        if ($model->user_id != Yii::$app->user->id) {
             throw new ErrorException(Yii::t('app', 'Forbidden to change entries of other users'));
         }
         $oldFile = $model->getImageFile();
         $oldattachment = $model->attachment;
         $oldFileName = $model->filename;
         $model->edit_datetime = date("Y-m-d H:i:s");
- 
+
         if ($model->load(Yii::$app->request->post())) {
             // process uploaded image file instance
             $file = $model->uploadImage();
- 
+
             // revert back if no valid file instance uploaded
             if ($file === false) {
                 $model->attachment = $oldattachment;
                 $model->filename = $oldFileName;
             }
- 
+
             if ($model->save()) {
                 // upload only if valid uploaded file instance found
                 if ($file !== false && unlink($oldFile)) { // delete old and overwrite
@@ -122,13 +130,14 @@ class CashbookController extends BaseController
             }
         }
         return $this->render('update', [
-            'model'=>$model,
+            'model' => $model,
         ]);
     }
+
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
-        if ($model->user_id != Yii::$app->user->id){
+        if ($model->user_id != Yii::$app->user->id) {
             throw new ErrorException(Yii::t('app', 'Forbidden to change entries of other users'));
         }
         // validate deletion and on failure process any exception
@@ -141,12 +150,13 @@ class CashbookController extends BaseController
         Yii::$app->session->setFlash("Entry-success", Yii::t("app", "Entry successfully deleted"));
         return $this->redirect(['index']);
     }
+
     public function actionTarget()
     {
         $model = new Cashbook();
         return $this->render('target', [
-                'model' => $model,
-            ]);
+            'model' => $model,
+        ]);
     }
 
     public function actionClone($id)
@@ -155,16 +165,16 @@ class CashbookController extends BaseController
         $model = $this->findModel($id);
         $clone = new Cashbook;
 
-        $clone->user_id         = $model->user_id;
-        $clone->category_id     = $model->category_id;
-        $clone->type_id         = $model->type_id;
-        $clone->value           = $model->value;
-        $clone->description     = $model->description;
-        $clone->date            = $model->date;
-        $clone->is_pending      = $model->is_pending;
-        $clone->attachment      = $model->attachment;
-        $clone->inc_datetime    = date('Y-m-d');
-        $clone->edit_datetime   = date('Y-m-d');
+        $clone->user_id = $model->user_id;
+        $clone->category_id = $model->category_id;
+        $clone->type_id = $model->type_id;
+        $clone->value = $model->value;
+        $clone->description = $model->description;
+        $clone->date = $model->date;
+        $clone->is_pending = $model->is_pending;
+        $clone->attachment = $model->attachment;
+        $clone->inc_datetime = date('Y-m-d');
+        $clone->edit_datetime = date('Y-m-d');
         $clone->save();
 
         Yii::$app->session->setFlash("clone-success", Yii::t("app", "Entry successfully copied"));

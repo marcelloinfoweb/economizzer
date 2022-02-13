@@ -1,5 +1,18 @@
 <?php
 
+use app\models\Profile;
+use app\controllers\AuthController;
+use app\controllers\UserController;
+use kartik\grid\Module;
+use yii\authclient\widgets\AuthChoiceStyleAsset;
+use yii\i18n\PhpMessageSource;
+use yii\log\FileTarget;
+use yii\swiftmailer\Mailer;
+use amnah\yii2\user\components\User;
+use yii\caching\FileCache;
+use yii\web\UrlManager;
+use app\components\LanguageSelector;
+
 $params = require(__DIR__ . '/params.php');
 
 $config = [
@@ -8,7 +21,7 @@ $config = [
     'bootstrap' => [
         'log',
         [
-            'class' => 'app\components\LanguageSelector',
+            'class' => LanguageSelector::class,
             'supportedLanguages' => ['en', 'pt', 'ru', 'ko', 'hu', 'fr', 'cn', 'de', 'es', 'ca', 'lt'],
         ],
     ],
@@ -16,7 +29,7 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
-    'sourceLanguage' => 'en-US',
+    'sourceLanguage' => 'pt-BR',
     'components' => [
         // 'formatter' => [
         //     'class' => 'yii\i18n\formatter',
@@ -24,7 +37,7 @@ $config = [
         //     'decimalSeparator' => ',',
         // ],
         'urlManager' => [
-            'class' => 'yii\web\UrlManager',
+            'class' => UrlManager::class,
             'showScriptName' => false,
             'enablePrettyUrl' => true,
             'rules' => array(
@@ -41,11 +54,11 @@ $config = [
             'cookieValidationKey' => 'eco',
         ],
         'cache' => [
-            'class' => 'yii\caching\FileCache',
+            'class' => FileCache::class,
         ],
         'user' => [
-            'class' => 'amnah\yii2\user\components\User',
-            'identityClass' => 'app\models\User',
+            'class' => User::class,
+            'identityClass' => \app\models\User::class,
         ],
         'view' => [
                 'theme' => [
@@ -58,7 +71,7 @@ $config = [
             'errorAction' => 'site/error',
         ],
         'mailer' => [
-            'class' => 'yii\swiftmailer\Mailer',
+            'class' => Mailer::class,
             'useFileTransport' => true,
             'messageConfig' => [
                 'from' => ['master@economizzer.com' => 'Admin'],
@@ -69,7 +82,7 @@ $config = [
             'traceLevel' => YII_DEBUG ? 3 : 0,
             'targets' => [
                 [
-                    'class' => 'yii\log\FileTarget',
+                    'class' => FileTarget::class,
                     'levels' => ['error', 'warning'],
                 ],
             ],
@@ -78,7 +91,7 @@ $config = [
         'i18n' => [
         'translations' => [
                 '*' => [
-                        'class' => 'yii\i18n\PhpMessageSource',
+                        'class' => PhpMessageSource::class,
                         'basePath' => '@app/messages',
                 ],
             ],
@@ -101,7 +114,7 @@ $config = [
         // ],
         'assetManager' => [
             'bundles' => [
-                'yii\authclient\widgets\AuthChoiceStyleAsset' => [
+                AuthChoiceStyleAsset::class => [
                     'sourcePath' => '@app/widgets/authchoice/assets',
                 ],
             ],
@@ -109,16 +122,16 @@ $config = [
     ],
     'modules' => [
         'gridview' =>  [
-            'class' => '\kartik\grid\Module',
+            'class' => Module::class,
         ],
         'user' => [
-            'class' => 'amnah\yii2\user\Module',
+            'class' => \amnah\yii2\user\Module::class,
             'controllerMap' => [
-                'default' => 'app\controllers\UserController',
-                'auth' => 'app\controllers\AuthController'
+                'default' => UserController::class,
+                'auth' => AuthController::class
             ],
             'modelClasses'  => [
-                'Profile' => 'app\models\Profile',
+                'Profile' => Profile::class,
             ],
         ],
     ],
@@ -128,10 +141,10 @@ $config = [
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment
     $config['bootstrap'][] = 'debug';
-    $config['modules']['debug'] = 'yii\debug\Module';
+    $config['modules']['debug'] = \yii\debug\Module::class;
 
     $config['bootstrap'][] = 'gii';
-    $config['modules']['gii'] = 'yii\gii\Module';
+    $config['modules']['gii'] = \yii\gii\Module::class;
 }
 
 return $config;

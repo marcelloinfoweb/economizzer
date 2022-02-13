@@ -17,10 +17,10 @@
         "issues": "https://github.com/gugoan/economizzer/issues",
         "source": "https://github.com/gugoan/economizzer"
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {
-        "php": ">=5.4.0",
-        "yiisoft/yii2": "~2.0.14",
+        "php": ">=7.3.0",
+        "yiisoft/yii2": "~2.0.43",
         "yiisoft/yii2-bootstrap": "~2.0.0",
         "yiisoft/yii2-swiftmailer": "~2.0.0",
         "yiisoft/yii2-jui": "~2.0.0",
@@ -46,6 +46,9 @@
         "process-timeout": 1800,
         "fxp-asset": {
             "enabled": false
+        },
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true
         }
     },
     "scripts": {

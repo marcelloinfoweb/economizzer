@@ -5,6 +5,7 @@ namespace app\controllers;
 use Yii;
 use app\models\Dashboard;
 use app\models\DashboardSearch;
+use yii\db\Exception;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -19,7 +20,7 @@ class DashboardController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::classname(),
-                'only'  => ['index','accomplishment','overview','performance'],
+                'only' => ['index', 'accomplishment', 'overview', 'performance'],
                 'rules' => [
                     [
                         'allow' => true,
@@ -36,7 +37,7 @@ class DashboardController extends Controller
         ];
     }
 
-    public function actionIndex()
+    public function actionIndex(): string
     {
         $searchModel = new DashboardSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
@@ -47,6 +48,9 @@ class DashboardController extends Controller
         ]);
     }
 
+    /**
+     * @throws NotFoundHttpException
+     */
     public function actionView($id)
     {
         return $this->render('view', [
@@ -60,41 +64,51 @@ class DashboardController extends Controller
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('create', [
-                'model' => $model,
-            ]);
         }
+
+        return $this->render('create', [
+            'model' => $model,
+        ]);
     }
 
+    /**
+     * @throws NotFoundHttpException
+     */
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('update', [
-                'model' => $model,
-            ]);
         }
+
+        return $this->render('update', [
+            'model' => $model,
+        ]);
     }
 
-    public function actionDelete($id)
+    /**
+     * @throws \yii\db\StaleObjectException
+     * @throws NotFoundHttpException
+     */
+    public function actionDelete($id): \yii\web\Response
     {
         $this->findModel($id)->delete();
 
         return $this->redirect(['index']);
     }
 
-    public function actionOverview()
+    /**
+     * @throws Exception
+     */
+    public function actionOverview(): string
     {
         $model = new Dashboard();
 
-        $thisyear  = date('Y');
+        $thisyear = date('Y');
         $thismonth = date('m');
-        $lastmonth = date("m",mktime(0,0,0,date("m")-1,1,date("Y")));
-        $user    = Yii::$app->user->identity->id;        
+        $lastmonth = date("m", mktime(0, 0, 0, date("m") - 1, 1, date("Y")));
+        $user = Yii::$app->user->identity->id;
 
 //get current month revenue
         $command = Yii::$app->db->createCommand("SELECT sum(value) FROM cashbook WHERE user_id = $user AND type_id = 1 AND MONTH(date) = $thismonth AND YEAR(date) = $thisyear");
@@ -115,9 +129,9 @@ class DashboardController extends Controller
         $all_expense_command = Yii::$app->db->createCommand("SELECT sum(value) FROM cashbook WHERE user_id = $user AND type_id = 2 AND MONTH(date) < $lastmonth");
         $all_expense = $all_expense_command->queryScalar();
 //calculate balance exclude previous month
-        $balance = $all_revenue+$all_expense;
+        $balance = $all_revenue + $all_expense;
 //calculate previous month revenue include balance
-        $previousmonth_revenue = $balance+$lastmonth_revenue;
+        $previousmonth_revenue = $balance + $lastmonth_revenue;
 
         $category_cmd = Yii::$app->db->createCommand(
             "SELECT desc_category AS cat, category.hexcolor_category as color, SUM(value) as value FROM cashbook
@@ -128,16 +142,16 @@ class DashboardController extends Controller
             ORDER BY value ASC LIMIT 10
             ");
         $category = $category_cmd->queryAll();
-        
+
         $cat = array();
         $color = array();
         $value = array();
- 
+
         for ($i = 0; $i < sizeof($category); $i++) {
-           $cat[] = $category[$i]["cat"];
-           $color[] = ($category[$i]["color"] <> '' ? $category[$i]["color"] : '#2C3E50');
-           $value[] = abs((int) $category[$i]["value"]); //turn value into positive number for chart gen
-        }   
+            $cat[] = $category[$i]["cat"];
+            $color[] = ($category[$i]["color"] <> '' ? $category[$i]["color"] : '#2C3E50');
+            $value[] = abs((int)$category[$i]["value"]); //turn value into positive number for chart gen
+        }
 
         $segment_cmd = Yii::$app->db->createCommand(
             "SELECT x.`year`, x.`month`, y.desc_category as seg, y.hexcolor_category as colorseg, sum( x.value) as total FROM (
@@ -151,32 +165,32 @@ class DashboardController extends Controller
                 GROUP BY y.desc_category, x.`year`, x.`month`
                 having x.`year` = year(now())  and x.`month` = month(now())       
             ");
-        $segment = $segment_cmd->queryAll();  
+        $segment = $segment_cmd->queryAll();
 
         $seg = array();
         $colorseg = array();
         $total = array();
- 
+
         for ($i = 0; $i < sizeof($segment); $i++) {
-           $seg[] = $segment[$i]["seg"];
-           $colorseg[] = ($segment[$i]["colorseg"] <> '' ? $segment[$i]["colorseg"] : '#2C3E50');
-           $total[] = abs((int) $segment[$i]["total"]);
-        }            
+            $seg[] = $segment[$i]["seg"];
+            $colorseg[] = ($segment[$i]["colorseg"] <> '' ? $segment[$i]["colorseg"] : '#2C3E50');
+            $total[] = abs((int)$segment[$i]["total"]);
+        }
 
         return $this->render('overview', [
-            'model'=>$model,
-            'currentmonth_revenue' => $currentmonth_revenue, 
+            'model' => $model,
+            'currentmonth_revenue' => $currentmonth_revenue,
             'currentmonth_expense' => $currentmonth_expense,
-            'previousmonth_revenue' => $previousmonth_revenue, 
-            'previousmonth_expense' => $previousmonth_expense, 
+            'previousmonth_revenue' => $previousmonth_revenue,
+            'previousmonth_expense' => $previousmonth_expense,
             'cat' => $cat,
             'color' => $color,
-            'value' => $value,                       
-            'seg' => $seg, 
-            'total' => $total, 
+            'value' => $value,
+            'seg' => $seg,
+            'total' => $total,
             'colorseg' => $colorseg,
-            ]);  
-    }    
+        ]);
+    }
 
     public function actionAccomplishment()
     {
@@ -184,9 +198,9 @@ class DashboardController extends Controller
 
         $url = Yii::$app->getRequest()->getQueryParam('category_id');
         $category_id = isset($url) ? $url : 0;
-        $thisyear  = date('Y');
+        $thisyear = date('Y');
         $thismonth = date('m');
-        $user    = Yii::$app->user->identity->id;
+        $user = Yii::$app->user->identity->id;
 
         $command = Yii::$app->db->createCommand("SELECT 
             desc_category as n, SUM(value) as v, MONTHNAME(date) as m 
@@ -197,33 +211,33 @@ class DashboardController extends Controller
             GROUP BY MONTH(date) 
             ORDER BY MONTH(date) asc;");
         $accomplishment = $command->queryAll();
-        
+
         $m = array();
         $v = array();
         $n = array();
- 
+
         for ($i = 0; $i < sizeof($accomplishment); $i++) {
-           $m[] = $accomplishment[$i]["m"];
-           $v[] = abs((int) $accomplishment[$i]["v"]); //turn value into positive number for chart gen
-           $n = $accomplishment[$i]["n"];
+            $m[] = $accomplishment[$i]["m"];
+            $v[] = abs((int)$accomplishment[$i]["v"]); //turn value into positive number for chart gen
+            $n = $accomplishment[$i]["n"];
         }
         return $this->render('accomplishment', [
-            'model'=>$model,
-            'm' => $m, 
+            'model' => $model,
+            'm' => $m,
             'v' => $v,
             'n' => $n,
             'category_id' => $category_id,
-            ]);    
+        ]);
     }
 
     public function actionPerformance()
     {
         $model = new Dashboard();
-        
-        $thisyear  = date('Y');
+
+        $thisyear = date('Y');
         $thismonth = date('m');
-        $lastmonth = date("m",mktime(0,0,0,date("m")-1,1,date("Y")));
-        $user      = Yii::$app->user->identity->id;
+        $lastmonth = date("m", mktime(0, 0, 0, date("m") - 1, 1, date("Y")));
+        $user = Yii::$app->user->identity->id;
 
         $command = Yii::$app->db->createCommand("SELECT 
             SUM(IF(cashbook.type_id=1, value, 0)) as v1,
@@ -231,23 +245,23 @@ class DashboardController extends Controller
             MONTHNAME(date) as m 
             FROM cashbook WHERE user_id = $user AND YEAR(date) = $thisyear GROUP BY m ORDER BY MONTH(date)");
         $performance = $command->queryAll();
-        
+
         $m = array();
         $v1 = array();
         $v2 = array();
- 
+
         for ($i = 0; $i < sizeof($performance); $i++) {
-           $m[] = $performance[$i]["m"];
-           $v1[] = (int) $performance[$i]["v1"];
-           $v2[] = abs((int) $performance[$i]["v2"]);
+            $m[] = $performance[$i]["m"];
+            $v1[] = (int)$performance[$i]["v1"];
+            $v2[] = abs((int)$performance[$i]["v2"]);
         }
         return $this->render('performance', [
-            'model'=>$model,
-            'm' => $m, 
+            'model' => $model,
+            'm' => $m,
             'v1' => $v1,
             'v2' => $v2,
-            ]); 
-    }      
+        ]);
+    }
 
     protected function findModel($id)
     {
